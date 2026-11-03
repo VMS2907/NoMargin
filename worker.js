@@ -7,7 +7,7 @@ self.onmessage = ({ data }) => {
     order = data.order;
     leftMatrix = data.left;
     rightMatrix = data.right;
-    self.postMessage({ type: "ready" });
+    self.postMessage({ id: data.id });
     return;
   }
 
@@ -25,5 +25,5 @@ self.onmessage = ({ data }) => {
       }
     }
   }
-  self.postMessage({ type: "complete", id, rowStart, buffer: output.buffer }, [output.buffer]);
+  self.postMessage({ id, rowStart, buffer: output.buffer }, [output.buffer]);
 };

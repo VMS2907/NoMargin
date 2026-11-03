@@ -3,217 +3,412 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f4f4ee" />
-    <meta name="description" content="Measure sequential and parallel matrix multiplication in your own browser. Compare real execution time, speedup, and efficiency." />
-    <title>Parallel Lab — performance analyzer</title>
+    <meta name="theme-color" content="#0c1016" />
+    <meta name="description" content="How much faster can a computer get by working in parallel? A live experiment that measures execution time, speedup and efficiency on your own device." />
+    <title>Parallel Lab</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" />
     <link rel="stylesheet" href="/styles.css" />
     <script type="module" src="/app.js"></script>
   </head>
   <body>
+    <a class="skip-link" href="#lab">Skip to the experiment</a>
     <header class="topbar">
-      <a class="brand" href="#top" aria-label="Parallel Lab home">
-        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-        <span>parallel<span class="brand-light">lab</span></span>
-        <span class="brand-index">COA / 01</span>
-      </a>
-      <nav class="topnav" aria-label="Main navigation">
-        <a href="#analyzer">Analyzer</a>
-        <a href="#method">How it works</a>
-      </nav>
-      <div class="local-badge"><span class="live-dot"></span> Runs on this device</div>
+      <div class="wrap topbar-inner">
+        <a class="brand" href="#top" aria-label="Parallel Lab home">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          Parallel Lab
+        </a>
+        <nav class="topnav" aria-label="Main navigation">
+          <a href="#why">Why</a>
+          <a href="#how">How it works</a>
+          <a href="#lab">Experiment</a>
+          <a href="#limits">Limits</a>
+          <a href="#findings">Findings</a>
+        </nav>
+      </div>
     </header>
 
     <main id="top">
       <section class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow"><span class="eyebrow-line"></span> PARALLEL COMPUTING / PERFORMANCE ANALYZER</p>
-          <h1>More workers.<br /><em>Meaningful</em> speedup?</h1>
-          <p class="hero-description">Run the same numerical workload sequentially and across real browser workers. See what your machine measures, including when parallelism costs more than it saves.</p>
-        </div>
-        <div class="hero-note" aria-label="Benchmark details">
-          <span class="note-number">01</span>
-          <div>
-            <span class="note-label">THE WORKLOAD</span>
-            <strong>Dense matrix multiplication</strong>
-            <span class="note-sub">A repeatable, CPU-bound calculation</span>
+        <div class="wrap hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">COA mini project · Parallelism: Need and Applications</p>
+            <h1>How much faster can a computer get by working in parallel?</h1>
+            <p class="lede">Parallel Lab runs one heavy calculation on one worker, then splits it across many, and measures the difference live on this device. No simulation, no stored numbers.</p>
+            <div class="hero-actions">
+              <button id="heroRunButton" class="button button-primary" type="button">
+                Run the experiment
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4.5v11l9-5.5z" /></svg>
+              </button>
+              <a class="button button-quiet" href="#how">See how it works</a>
+            </div>
+            <p id="deviceLine" class="device-line">Runs in your browser. Nothing you measure is uploaded.</p>
           </div>
-          <svg viewBox="0 0 76 76" aria-hidden="true" class="matrix-icon">
-            <path d="M4 9h20v20H4zM28 9h20v20H28zM52 9h20v20H52zM4 33h20v20H4zM28 33h20v20H28zM52 33h20v20H52zM4 57h20v12H4zM28 57h20v12H28zM52 57h20v12H52z" />
-            <path d="M10 19h8M34 19h8M58 19h8M10 43h8M34 43h8M58 43h8" />
-          </svg>
+
+          <figure class="hero-race">
+            <div class="race-pair">
+              <div class="race-lane">
+                <div class="race-lane-head"><span class="key key-sequential"></span>Sequential<small>1 worker</small></div>
+                <canvas id="heroSequential" class="matrix-canvas" aria-hidden="true"></canvas>
+              </div>
+              <div class="race-lane">
+                <div class="race-lane-head"><span class="key key-parallel"></span>Parallel<small>4 workers</small></div>
+                <canvas id="heroParallel" class="matrix-canvas" aria-hidden="true"></canvas>
+              </div>
+            </div>
+            <figcaption>Illustration of the idea: each square is part of the answer. Real measurements are in the experiment below.</figcaption>
+          </figure>
         </div>
       </section>
 
-      <section id="analyzer" class="analyzer-layout" aria-label="Performance analyzer">
-        <aside class="control-card card">
-          <div class="card-heading">
-            <span class="section-kicker">SET UP A RUN</span>
-            <span class="step-badge">01—03</span>
-          </div>
-
-          <div class="control-group">
-            <div class="control-label-row">
-              <label for="sizeRange">Matrix order <span class="info-mark" title="The calculation multiplies two square matrices of this order.">i</span></label>
-              <output id="sizeOutput" for="sizeRange">320 × 320</output>
-            </div>
-            <p class="control-help">Larger matrices mean more arithmetic per run.</p>
-            <input id="sizeRange" class="range-input" type="range" min="128" max="512" step="16" value="320" />
-            <div class="range-ends"><span>128</span><span>512</span></div>
-            <div class="preset-row" aria-label="Matrix size presets">
-              <button class="preset" type="button" data-size="256">Small</button>
-              <button class="preset" type="button" data-size="384">Balanced</button>
-              <button class="preset" type="button" data-size="512">Large</button>
-            </div>
-          </div>
-
-          <div class="control-group">
-            <div class="control-label-row">
-              <label for="workerRange">Parallel workers <span class="info-mark" title="Each worker is a browser Web Worker running on a separate schedulable thread.">i</span></label>
-              <output id="workerOutput" for="workerRange">2 workers</output>
-            </div>
-            <p class="control-help">Compared with one worker running the full workload.</p>
-            <input id="workerRange" class="range-input" type="range" min="2" max="4" step="1" value="2" />
-            <div class="range-ends"><span>2</span><span id="workerMaxLabel">4</span></div>
-            <p id="hardwareNote" class="hardware-note">Checking browser-reported logical processors…</p>
-          </div>
-
-          <fieldset class="control-group rounds-group">
-            <legend>Measured rounds</legend>
-            <p class="control-help">The median helps smooth short timing spikes.</p>
-            <div class="segmented" role="radiogroup" aria-label="Measured rounds">
-              <label><input type="radio" name="rounds" value="3" checked /><span>3 rounds</span></label>
-              <label><input type="radio" name="rounds" value="5" /><span>5 rounds</span></label>
-            </div>
-          </fieldset>
-
-          <div class="run-actions">
-            <button id="runButton" class="run-button" type="button">
-              <span>Run benchmark</span>
-              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M10 5l5 5-5 5" /></svg>
-            </button>
-            <button id="cancelButton" class="cancel-button" type="button" hidden>Cancel run</button>
-          </div>
-          <p class="privacy-note"><span aria-hidden="true">↗</span> Inputs and measurements stay in this browser.</p>
-        </aside>
-
-        <div class="results-column">
-          <div class="results-topline">
+      <section id="why" class="section">
+        <div class="wrap">
+          <div class="split-head">
             <div>
-              <span class="section-kicker">LIVE MEASUREMENT</span>
-              <h2>Your machine, your numbers.</h2>
+              <p class="eyebrow">The need</p>
+              <h2>Chips stopped getting much faster. They started getting more cores.</h2>
             </div>
-            <div id="runStatus" class="run-status" role="status" aria-live="polite"><span class="status-dot"></span><span id="statusText">Ready when you are</span></div>
+            <p class="section-lede">Until the mid-2000s, each new processor simply ran at a higher clock speed. Then heat became the limit, so manufacturers put several cores on one chip instead. A program only benefits from those extra cores if its work is written to be split between them.</p>
           </div>
 
-          <section class="chart-card card" aria-labelledby="chartTitle">
-            <div class="chart-header">
-              <div>
-                <div class="chart-title-line"><span class="chart-glyph" aria-hidden="true">↗</span><h3 id="chartTitle">Execution time</h3></div>
-                <p id="chartSubtitle" class="chart-subtitle">Median of measured rounds · milliseconds</p>
-              </div>
-              <div class="chart-legend" aria-label="Chart legend">
-                <span><i class="legend-key sequential-key"></i>Sequential · 1 worker</span>
-                <span><i class="legend-key parallel-key"></i>Parallel · <b id="legendWorkers">2 workers</b></span>
-              </div>
-            </div>
-
-            <div id="chartEmpty" class="chart-empty">
-              <div class="empty-ruler" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-              <div class="empty-message">
-                <span class="empty-bracket" aria-hidden="true">[ ]</span>
-                <strong>No measurements yet</strong>
-                <span>Run the workload to draw your comparison.</span>
-              </div>
-            </div>
-
-            <div id="chartResults" class="chart-results" hidden>
-              <div class="bar-row">
-                <div class="bar-label"><span class="legend-key sequential-key"></span><span>Sequential <small>1 worker</small></span></div>
-                <div class="bar-track"><div id="sequentialBar" class="bar sequential-bar"></div></div>
-                <strong id="sequentialTime" class="bar-time">—</strong>
-              </div>
-              <div class="bar-row">
-                <div class="bar-label"><span class="legend-key parallel-key"></span><span>Parallel <small id="parallelWorkerLabel">2 workers</small></span></div>
-                <div class="bar-track"><div id="parallelBar" class="bar parallel-bar"></div></div>
-                <strong id="parallelTime" class="bar-time">—</strong>
-              </div>
-              <div class="chart-foot"><span id="chartWorkload">—</span><span id="chartRoundLabel">—</span></div>
-            </div>
-
-            <div id="progressWrap" class="progress-wrap" hidden>
-              <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
-              <span id="progressLabel">Preparing workers…</span>
-            </div>
-          </section>
-
-          <div class="metrics-grid" aria-label="Derived performance metrics">
-            <article class="metric-card card metric-primary">
-              <span class="metric-label">SPEEDUP</span>
-              <div class="metric-value"><span id="speedupValue">—</span><span class="metric-unit">×</span></div>
-              <p id="speedupNote" class="metric-note">Sequential time ÷ parallel time</p>
+          <h3 class="table-title">Where it is used, and what gets split</h3>
+          <div class="applications">
+            <article>
+              <h4>Weather and climate</h4>
+              <p>The atmosphere is divided into regions, and each core simulates its own regions.</p>
             </article>
-            <article class="metric-card card">
-              <span class="metric-label">EFFICIENCY</span>
-              <div class="metric-value"><span id="efficiencyValue">—</span><span class="metric-unit">%</span></div>
-              <p class="metric-note">Speedup ÷ worker count</p>
+            <article>
+              <h4>AI model training</h4>
+              <p>Training is mostly matrix multiplication, the same operation tested on this page.</p>
             </article>
-            <article class="metric-card card">
-              <span class="metric-label">TIME SAVED</span>
-              <div class="metric-value"><span id="savedValue">—</span><span class="metric-unit">%</span></div>
-              <p id="savedNote" class="metric-note">Relative to sequential median</p>
+            <article>
+              <h4>Image and video</h4>
+              <p>Frames and blocks of pixels can often be processed at the same time.</p>
             </article>
-            <article class="metric-card card">
-              <span class="metric-label">CORRECTNESS</span>
-              <div class="metric-value check-value"><span id="correctnessValue">—</span></div>
-              <p id="correctnessNote" class="metric-note">Output check runs after timing</p>
+            <article>
+              <h4>Engineering simulation</h4>
+              <p>Crash and airflow models break a shape into small elements solved in groups.</p>
             </article>
           </div>
-
-          <div class="result-footer">
-            <p id="setupInfo"><span class="setup-icon">◷</span> Worker startup, data copy and warm-up are reported separately from measured rounds.</p>
-            <button id="downloadButton" class="text-button" type="button" disabled>Export CSV <span aria-hidden="true">↓</span></button>
-          </div>
-
-          <section id="historySection" class="history-section" hidden aria-labelledby="historyTitle">
-            <div class="history-heading"><div><span class="section-kicker">THIS SESSION</span><h3 id="historyTitle">Run history</h3></div><button id="clearButton" class="text-button" type="button">Clear history</button></div>
-            <div class="history-table-wrap">
-              <table><thead><tr><th>Run</th><th>Matrix</th><th>Workers</th><th>Sequential</th><th>Parallel</th><th>Speedup</th></tr></thead><tbody id="historyRows"></tbody></table>
-            </div>
-          </section>
         </div>
       </section>
 
-      <section id="method" class="method-section">
-        <div class="method-heading">
-          <span class="section-kicker">UNDER THE HOOD</span>
-          <h2>Same math. Different<br /><em>work distribution.</em></h2>
-          <p>Each run multiplies two seeded square matrices using the same JavaScript kernel. The parallel path splits independent output rows across Web Workers; the sequential path assigns all rows to one worker.</p>
+      <section id="how" class="section section-tinted">
+        <div class="wrap">
+          <div class="split-head">
+            <div>
+              <p class="eyebrow">The method</p>
+              <h2>One job, one answer, two ways of doing it.</h2>
+            </div>
+            <p class="section-lede">The job is multiplying two large square matrices. It is heavy on the CPU, and each row of the answer can be worked out without waiting for any other row, so it splits cleanly.</p>
+          </div>
+
+          <ol class="steps">
+            <li>
+              <h3>Sequential version</h3>
+              <p>One worker thread computes every row of the answer, one after another.</p>
+            </li>
+            <li>
+              <h3>Parallel version</h3>
+              <p>The rows are divided equally between several workers, each on its own thread, running exactly the same code.</p>
+            </li>
+            <li>
+              <h3>A fair comparison</h3>
+              <p>Every worker warms up first, then we take the median of repeated runs. Timing includes sending out the work and assembling the result, and both answers are checked against each other.</p>
+            </li>
+          </ol>
+
+          <div class="formula-grid">
+            <article class="formula-card">
+              <h3>Speedup</h3>
+              <p class="formula">S = T<sub>1</sub> ÷ T<sub>p</sub></p>
+              <p>How many times faster the job finished using <i>p</i> workers.</p>
+            </article>
+            <article class="formula-card">
+              <h3>Efficiency</h3>
+              <p class="formula">E = S ÷ p</p>
+              <p>How well each worker was used. 100% means nothing was wasted.</p>
+            </article>
+            <article class="formula-card formula-example">
+              <h3>Worked example</h3>
+              <p class="formula">800 ms ÷ 250 ms = 3.2×</p>
+              <p>If 4 workers take 250 ms where 1 worker took 800 ms, then 3.2 ÷ 4 gives 80% efficiency.</p>
+            </article>
+          </div>
         </div>
-        <div class="method-details">
-          <article class="method-card">
-            <span class="method-index">01 / SPEEDUP</span>
-            <div class="formula">T<sub>sequential</sub> ÷ T<sub>parallel</sub></div>
-            <p>Above 1× means the parallel run finished sooner. Below 1× means worker coordination outweighed the work saved.</p>
-          </article>
-          <article class="method-card">
-            <span class="method-index">02 / EFFICIENCY</span>
-            <div class="formula">Speedup ÷ workers</div>
-            <p>Shows the speedup per worker. Values above 100% can occur from timing noise or workload effects; repeat the run to compare.</p>
-          </article>
-          <article class="method-card method-caveat">
-            <span class="method-index">03 / READ THE RESULT</span>
-            <div class="formula">A browser measurement</div>
-            <p>Warm worker pools are reused across rounds; startup and input-copy time is shown separately. Results depend on your CPU, browser, background activity, and thermal state. This is an educational comparison, not a hardware benchmark.</p>
-          </article>
+      </section>
+
+      <section id="lab" class="section lab">
+        <div class="wrap">
+          <div class="split-head">
+            <div>
+              <p class="eyebrow">The experiment</p>
+              <h2>Measure it yourself.</h2>
+            </div>
+            <p class="section-lede">We time the job at every worker count, from 1 up to your limit, so you can see the whole trend and not just a single before and after.</p>
+          </div>
+
+          <form id="labForm" class="controls" onsubmit="return false">
+            <fieldset class="field">
+              <legend>Job size</legend>
+              <div class="segmented segmented-3">
+                <label><input type="radio" name="order" value="256" /><span>Small<small>256 × 256</small></span></label>
+                <label><input type="radio" name="order" value="512" checked /><span>Medium<small>512 × 512</small></span></label>
+                <label><input type="radio" name="order" value="1024" /><span>Large<small>1024 × 1024</small></span></label>
+              </div>
+              <p id="sizeNote" class="field-note"></p>
+            </fieldset>
+
+            <div class="field">
+              <div class="field-head">
+                <label for="workerRange">Test up to</label>
+                <output id="workerOutput" for="workerRange">4 workers</output>
+              </div>
+              <input id="workerRange" type="range" min="2" max="4" step="1" value="4" />
+              <p id="hardwareNote" class="field-note"></p>
+            </div>
+
+            <fieldset class="field">
+              <legend>Repeats</legend>
+              <div class="segmented">
+                <label><input type="radio" name="rounds" value="3" checked /><span>3 rounds</span></label>
+                <label><input type="radio" name="rounds" value="5" /><span>5 rounds</span></label>
+              </div>
+              <p class="field-note">We keep the median, which ignores one-off spikes.</p>
+            </fieldset>
+
+            <div class="field field-run">
+              <button id="runButton" class="button button-primary button-wide" type="button">
+                <span>Run the experiment</span>
+                <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4.5v11l9-5.5z" /></svg>
+              </button>
+              <button id="cancelButton" class="button button-quiet button-wide" type="button" hidden>Cancel</button>
+            </div>
+          </form>
+
+          <div id="progressPanel" class="progress-panel" hidden>
+            <div class="progress-text">
+              <strong id="progressTitle" role="status" aria-live="polite">Preparing</strong>
+              <div id="coreLights" class="core-lights" aria-hidden="true"></div>
+            </div>
+            <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+          </div>
+
+          <p id="labError" class="error-note" role="alert" hidden></p>
+
+          <div id="preview" class="panel preview">
+            <div class="panel-head">
+              <div>
+                <h3>Speedup against worker count</h3>
+                <p>Perfect scaling is the diagonal. Your measured line will be drawn against it.</p>
+              </div>
+            </div>
+            <div id="previewChart"></div>
+          </div>
+
+          <div id="results" hidden>
+            <div class="verdict">
+              <p class="eyebrow">Result on this device</p>
+              <p id="verdictText" class="verdict-text" aria-live="polite"></p>
+              <p id="verdictNote" class="verdict-note"></p>
+            </div>
+
+            <div class="compare-row">
+              <span id="compareLabel">Compare 1 worker with</span>
+              <div id="workerChips" class="chips" role="group" aria-labelledby="compareLabel"></div>
+            </div>
+
+            <div class="results-top">
+              <div class="panel race-panel">
+                <div class="panel-head">
+                  <div>
+                    <h3>The race, replayed</h3>
+                    <p id="raceNote"></p>
+                  </div>
+                  <button id="replayButton" class="text-button" type="button">Replay</button>
+                </div>
+                <div class="race-pair">
+                  <div class="race-lane">
+                    <div class="race-lane-head"><span class="key key-sequential"></span>Sequential<small>1 worker</small></div>
+                    <canvas id="raceSequential" class="matrix-canvas" aria-hidden="true"></canvas>
+                    <output id="raceSequentialTime" class="race-time">0 ms</output>
+                  </div>
+                  <div class="race-lane">
+                    <div class="race-lane-head"><span class="key key-parallel"></span>Parallel<small id="raceWorkers">4 workers</small></div>
+                    <canvas id="raceParallel" class="matrix-canvas" aria-hidden="true"></canvas>
+                    <output id="raceParallelTime" class="race-time">0 ms</output>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tiles">
+                <article class="tile">
+                  <h3>Execution time</h3>
+                  <p id="timeValue" class="tile-value"></p>
+                  <p id="timeNote" class="tile-note"></p>
+                </article>
+                <article class="tile">
+                  <h3>Speedup</h3>
+                  <p id="speedupValue" class="tile-value"></p>
+                  <p id="speedupNote" class="tile-note"></p>
+                </article>
+                <article class="tile">
+                  <h3>Efficiency</h3>
+                  <p id="efficiencyValue" class="tile-value"></p>
+                  <p id="efficiencyNote" class="tile-note"></p>
+                </article>
+                <article class="tile">
+                  <h3>Same answer?</h3>
+                  <p id="matchValue" class="tile-value tile-status"></p>
+                  <p id="matchNote" class="tile-note"></p>
+                </article>
+              </div>
+            </div>
+
+            <div class="charts">
+              <div class="panel chart-main">
+                <div class="panel-head">
+                  <div>
+                    <h3>Speedup: how close to perfect?</h3>
+                    <p>The gap between your line and the diagonal is the cost of parallelism. Select a point to compare it.</p>
+                  </div>
+                </div>
+                <ul class="legend" aria-label="Chart legend">
+                  <li><span class="key-line key-line-measured"></span>Measured</li>
+                  <li><span class="key-line key-line-ideal"></span>Perfect scaling</li>
+                  <li><span class="key-line key-line-fit"></span>Amdahl's law fit</li>
+                </ul>
+                <div id="speedupChart"></div>
+              </div>
+              <div class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h3>Execution time</h3>
+                    <p>Median per run, in milliseconds.</p>
+                  </div>
+                </div>
+                <div id="timeChart"></div>
+              </div>
+              <div class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h3>Efficiency</h3>
+                    <p>Falls as coordination and shared hardware eat into the gains.</p>
+                  </div>
+                </div>
+                <div id="efficiencyChart"></div>
+              </div>
+            </div>
+
+            <details class="data-details">
+              <summary>See the numbers</summary>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th scope="col">Workers</th><th scope="col">Median time</th><th scope="col">Speedup</th><th scope="col">Efficiency</th><th scope="col">Every round</th><th scope="col">Answer</th></tr></thead>
+                  <tbody id="dataRows"></tbody>
+                </table>
+              </div>
+              <div class="table-actions">
+                <button id="downloadButton" class="text-button" type="button">Download CSV</button>
+              </div>
+            </details>
+
+          </div>
+        </div>
+      </section>
+
+      <section id="limits" class="section section-tinted">
+        <div class="wrap">
+          <div class="split-head">
+            <div>
+              <p class="eyebrow">The limitations</p>
+              <h2>Why doubling the workers doesn't double the speed.</h2>
+            </div>
+            <p class="section-lede">Parallelism has a ceiling. Part of every program has to run one step at a time, splitting work costs time of its own, and all the cores share the same memory.</p>
+          </div>
+
+          <div class="limits-grid">
+            <div class="limit-list">
+              <article>
+                <h3>The serial part</h3>
+                <p>Dividing up the job and assembling the answer happen in one place, however many workers there are. Amdahl's law says this part sets a hard ceiling on speedup.</p>
+              </article>
+              <article>
+                <h3>Coordination overhead</h3>
+                <p>Workers have to be given their rows and send results back, which takes time the sequential version never spends.</p>
+              </article>
+              <article>
+                <h3>Shared hardware</h3>
+                <p>Cores compete for the same memory and cache. Logical processors may also share a physical core, so gains often flatten early.</p>
+              </article>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <div>
+                  <h3>Small jobs: when splitting isn't worth it</h3>
+                  <p>On a small job, overhead can outweigh the gain. This test shrinks the job to find out where. Bars below the 1× line were slower than one worker.</p>
+                </div>
+              </div>
+              <button id="sizeRunButton" class="button button-secondary" type="button">Run the small-job test</button>
+              <div id="sizeProgress" class="progress-track size-progress" hidden><div id="sizeProgressBar" class="progress-bar"></div></div>
+              <p id="sizeVerdict" class="size-verdict" aria-live="polite" hidden></p>
+              <div id="sizeChart"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="findings" class="section">
+        <div class="wrap">
+          <div class="split-head">
+            <div>
+              <p class="eyebrow">The conclusion</p>
+              <h2>So, how can parallel processing help?</h2>
+            </div>
+            <p id="findingsLede" class="section-lede">It can cut the running time of heavy calculations dramatically, as long as the job is large enough and most of it can be split. Run the experiment and this section fills in with your own measurements.</p>
+          </div>
+
+          <div class="findings-grid">
+            <div class="finding-column">
+              <h3><span class="finding-mark finding-plus" aria-hidden="true">+</span>Benefits</h3>
+              <ul id="benefitsList" class="finding-list"></ul>
+            </div>
+            <div class="finding-column">
+              <h3><span class="finding-mark finding-minus" aria-hidden="true">−</span>Limitations</h3>
+              <ul id="limitationsList" class="finding-list"></ul>
+            </div>
+          </div>
+
+          <h3 class="table-title">How this meets the project brief</h3>
+          <div class="table-wrap brief-table">
+            <table>
+              <thead><tr><th scope="col">The brief asks for</th><th scope="col">What we built</th><th scope="col">Where to see it</th></tr></thead>
+              <tbody>
+                <tr><td>A sequential and a parallel solution for a large numerical computation</td><td>Matrix multiplication with one kernel, run on 1 Web Worker or split by row across many</td><td><a href="#how">How it works</a></td></tr>
+                <tr><td>Compare execution time, speedup and efficiency</td><td>Live timing at every worker count, with charts, raw figures and a CSV download</td><td><a href="#lab">Experiment</a></td></tr>
+                <tr><td>Analyze the benefits and limitations of parallel processing</td><td>A fit to Amdahl's law, a small-job overhead test, and conclusions written from your results</td><td><a href="#limits">Limits</a>, <a href="#findings">Findings</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <details class="data-details method-notes">
+            <summary>How to read these numbers responsibly</summary>
+            <p>This is a browser measurement for learning, not a hardware benchmark. Results change with your CPU, browser, background activity and temperature, so repeat a run before comparing settings. Efficiency above 100% can come from timing noise or cache effects. The Amdahl fit lumps together everything that limits scaling, including memory contention and overhead, so read it as an estimate rather than a measured serial fraction. Setting up workers and copying the matrices happens before timing starts.</p>
+          </details>
         </div>
       </section>
     </main>
 
     <footer class="page-footer">
-      <a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>parallel<span class="brand-light">lab</span></span></a>
-      <p>Computing concepts, measured in your browser.</p>
-      <a href="#top" class="back-top">Back to top ↑</a>
+      <div class="wrap footer-inner">
+        <span class="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Parallel Lab</span>
+        <p>Parallel Computing Performance Analyzer, a Computer Organization and Architecture mini project.</p>
+        <a class="footer-link" href="https://github.com/VMS2907/NoMargin">Source code on GitHub</a>
+      </div>
     </footer>
   </body>
 </html>
