@@ -23,6 +23,6 @@ npx serve .
 
 Then open the local URL printed by the server. The site has no runtime dependencies or backend.
 
-## Deploy
+## Host the site
 
-Import this repository in Vercel as a static site. It needs no build command and uses the repository root as its output directory. Subsequent pushes to the connected branch can trigger automatic deployments.
+This is a static site with no build step or backend. On a static host, publish the repository root as the site directory; connect the `main` branch if you want later pushes to deploy automatically.
