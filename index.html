@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f4f4ee" />
+    <meta name="description" content="Measure sequential and parallel matrix multiplication in your own browser. Compare real execution time, speedup, and efficiency." />
+    <title>Parallel Lab — performance analyzer</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="Parallel Lab home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span>parallel<span class="brand-light">lab</span></span>
+        <span class="brand-index">COA / 01</span>
+      </a>
+      <nav class="topnav" aria-label="Main navigation">
+        <a href="#analyzer">Analyzer</a>
+        <a href="#method">How it works</a>
+      </nav>
+      <div class="local-badge"><span class="live-dot"></span> Runs on this device</div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="eyebrow-line"></span> PARALLEL COMPUTING / PERFORMANCE ANALYZER</p>
+          <h1>More workers.<br /><em>Meaningful</em> speedup?</h1>
+          <p class="hero-description">Run the same numerical workload sequentially and across real browser workers. See what your machine measures, including when parallelism costs more than it saves.</p>
+        </div>
+        <div class="hero-note" aria-label="Benchmark details">
+          <span class="note-number">01</span>
+          <div>
+            <span class="note-label">THE WORKLOAD</span>
+            <strong>Dense matrix multiplication</strong>
+            <span class="note-sub">A repeatable, CPU-bound calculation</span>
+          </div>
+          <svg viewBox="0 0 76 76" aria-hidden="true" class="matrix-icon">
+            <path d="M4 9h20v20H4zM28 9h20v20H28zM52 9h20v20H52zM4 33h20v20H4zM28 33h20v20H28zM52 33h20v20H52zM4 57h20v12H4zM28 57h20v12H28zM52 57h20v12H52z" />
+            <path d="M10 19h8M34 19h8M58 19h8M10 43h8M34 43h8M58 43h8" />
+          </svg>
+        </div>
+      </section>
+
+      <section id="analyzer" class="analyzer-layout" aria-label="Performance analyzer">
+        <aside class="control-card card">
+          <div class="card-heading">
+            <span class="section-kicker">SET UP A RUN</span>
+            <span class="step-badge">01—03</span>
+          </div>
+
+          <div class="control-group">
+            <div class="control-label-row">
+              <label for="sizeRange">Matrix order <span class="info-mark" title="The calculation multiplies two square matrices of this order.">i</span></label>
+              <output id="sizeOutput" for="sizeRange">320 × 320</output>
+            </div>
+            <p class="control-help">Larger matrices mean more arithmetic per run.</p>
+            <input id="sizeRange" class="range-input" type="range" min="128" max="512" step="16" value="320" />
+            <div class="range-ends"><span>128</span><span>512</span></div>
+            <div class="preset-row" aria-label="Matrix size presets">
+              <button class="preset" type="button" data-size="256">Small</button>
+              <button class="preset" type="button" data-size="384">Balanced</button>
+              <button class="preset" type="button" data-size="512">Large</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="control-label-row">
+              <label for="workerRange">Parallel workers <span class="info-mark" title="Each worker is a browser Web Worker running on a separate schedulable thread.">i</span></label>
+              <output id="workerOutput" for="workerRange">2 workers</output>
+            </div>
+            <p class="control-help">Compared with one worker running the full workload.</p>
+            <input id="workerRange" class="range-input" type="range" min="2" max="4" step="1" value="2" />
+            <div class="range-ends"><span>2</span><span id="workerMaxLabel">4</span></div>
+            <p id="hardwareNote" class="hardware-note">Checking browser-reported logical processors…</p>
+          </div>
+
+          <fieldset class="control-group rounds-group">
+            <legend>Measured rounds</legend>
+            <p class="control-help">The median helps smooth short timing spikes.</p>
+            <div class="segmented" role="radiogroup" aria-label="Measured rounds">
+              <label><input type="radio" name="rounds" value="3" checked /><span>3 rounds</span></label>
+              <label><input type="radio" name="rounds" value="5" /><span>5 rounds</span></label>
+            </div>
+          </fieldset>
+
+          <div class="run-actions">
+            <button id="runButton" class="run-button" type="button">
+              <span>Run benchmark</span>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M10 5l5 5-5 5" /></svg>
+            </button>
+            <button id="cancelButton" class="cancel-button" type="button" hidden>Cancel run</button>
+          </div>
+          <p class="privacy-note"><span aria-hidden="true">↗</span> Inputs and measurements stay in this browser.</p>
+        </aside>
+
+        <div class="results-column">
+          <div class="results-topline">
+            <div>
+              <span class="section-kicker">LIVE MEASUREMENT</span>
+              <h2>Your machine, your numbers.</h2>
+            </div>
+            <div id="runStatus" class="run-status" role="status" aria-live="polite"><span class="status-dot"></span><span id="statusText">Ready when you are</span></div>
+          </div>
+
+          <section class="chart-card card" aria-labelledby="chartTitle">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title-line"><span class="chart-glyph" aria-hidden="true">↗</span><h3 id="chartTitle">Execution time</h3></div>
+                <p id="chartSubtitle" class="chart-subtitle">Median of measured rounds · milliseconds</p>
+              </div>
+              <div class="chart-legend" aria-label="Chart legend">
+                <span><i class="legend-key sequential-key"></i>Sequential · 1 worker</span>
+                <span><i class="legend-key parallel-key"></i>Parallel · <b id="legendWorkers">2 workers</b></span>
+              </div>
+            </div>
+
+            <div id="chartEmpty" class="chart-empty">
+              <div class="empty-ruler" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+              <div class="empty-message">
+                <span class="empty-bracket" aria-hidden="true">[ ]</span>
+                <strong>No measurements yet</strong>
+                <span>Run the workload to draw your comparison.</span>
+              </div>
+            </div>
+
+            <div id="chartResults" class="chart-results" hidden>
+              <div class="bar-row">
+                <div class="bar-label"><span class="legend-key sequential-key"></span><span>Sequential <small>1 worker</small></span></div>
+                <div class="bar-track"><div id="sequentialBar" class="bar sequential-bar"></div></div>
+                <strong id="sequentialTime" class="bar-time">—</strong>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label"><span class="legend-key parallel-key"></span><span>Parallel <small id="parallelWorkerLabel">2 workers</small></span></div>
+                <div class="bar-track"><div id="parallelBar" class="bar parallel-bar"></div></div>
+                <strong id="parallelTime" class="bar-time">—</strong>
+              </div>
+              <div class="chart-foot"><span id="chartWorkload">—</span><span id="chartRoundLabel">—</span></div>
+            </div>
+
+            <div id="progressWrap" class="progress-wrap" hidden>
+              <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+              <span id="progressLabel">Preparing workers…</span>
+            </div>
+          </section>
+
+          <div class="metrics-grid" aria-label="Derived performance metrics">
+            <article class="metric-card card metric-primary">
+              <span class="metric-label">SPEEDUP</span>
+              <div class="metric-value"><span id="speedupValue">—</span><span class="metric-unit">×</span></div>
+              <p id="speedupNote" class="metric-note">Sequential time ÷ parallel time</p>
+            </article>
+            <article class="metric-card card">
+              <span class="metric-label">EFFICIENCY</span>
+              <div class="metric-value"><span id="efficiencyValue">—</span><span class="metric-unit">%</span></div>
+              <p class="metric-note">Speedup ÷ worker count</p>
+            </article>
+            <article class="metric-card card">
+              <span class="metric-label">TIME SAVED</span>
+              <div class="metric-value"><span id="savedValue">—</span><span class="metric-unit">%</span></div>
+              <p id="savedNote" class="metric-note">Relative to sequential median</p>
+            </article>
+            <article class="metric-card card">
+              <span class="metric-label">CORRECTNESS</span>
+              <div class="metric-value check-value"><span id="correctnessValue">—</span></div>
+              <p id="correctnessNote" class="metric-note">Output check runs after timing</p>
+            </article>
+          </div>
+
+          <div class="result-footer">
+            <p id="setupInfo"><span class="setup-icon">◷</span> Worker startup, data copy and warm-up are reported separately from measured rounds.</p>
+            <button id="downloadButton" class="text-button" type="button" disabled>Export CSV <span aria-hidden="true">↓</span></button>
+          </div>
+
+          <section id="historySection" class="history-section" hidden aria-labelledby="historyTitle">
+            <div class="history-heading"><div><span class="section-kicker">THIS SESSION</span><h3 id="historyTitle">Run history</h3></div><button id="clearButton" class="text-button" type="button">Clear history</button></div>
+            <div class="history-table-wrap">
+              <table><thead><tr><th>Run</th><th>Matrix</th><th>Workers</th><th>Sequential</th><th>Parallel</th><th>Speedup</th></tr></thead><tbody id="historyRows"></tbody></table>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="method" class="method-section">
+        <div class="method-heading">
+          <span class="section-kicker">UNDER THE HOOD</span>
+          <h2>Same math. Different<br /><em>work distribution.</em></h2>
+          <p>Each run multiplies two seeded square matrices using the same JavaScript kernel. The parallel path splits independent output rows across Web Workers; the sequential path assigns all rows to one worker.</p>
+        </div>
+        <div class="method-details">
+          <article class="method-card">
+            <span class="method-index">01 / SPEEDUP</span>
+            <div class="formula">T<sub>sequential</sub> ÷ T<sub>parallel</sub></div>
+            <p>Above 1× means the parallel run finished sooner. Below 1× means worker coordination outweighed the work saved.</p>
+          </article>
+          <article class="method-card">
+            <span class="method-index">02 / EFFICIENCY</span>
+            <div class="formula">Speedup ÷ workers</div>
+            <p>Shows the speedup per worker. Values above 100% can occur from timing noise or workload effects; repeat the run to compare.</p>
+          </article>
+          <article class="method-card method-caveat">
+            <span class="method-index">03 / READ THE RESULT</span>
+            <div class="formula">A browser measurement</div>
+            <p>Warm worker pools are reused across rounds; startup and input-copy time is shown separately. Results depend on your CPU, browser, background activity, and thermal state. This is an educational comparison, not a hardware benchmark.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="page-footer">
+      <a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>parallel<span class="brand-light">lab</span></span></a>
+      <p>Computing concepts, measured in your browser.</p>
+      <a href="#top" class="back-top">Back to top ↑</a>
+    </footer>
+  </body>
+</html>
